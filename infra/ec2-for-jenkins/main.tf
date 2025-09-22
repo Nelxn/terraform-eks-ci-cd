@@ -67,6 +67,15 @@ resource "aws_security_group" "jenkins" {
     protocol    = "tcp"
     cidr_blocks  = ["0.0.0.0/0"]
   }
+
+
+  # allow inbound traffic on port 50000 from anywhere (for Jenkins agents)
+  ingress {
+    from_port   = 50000
+    to_port     = 50000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   
   # allow all outbound traffic
   egress {
