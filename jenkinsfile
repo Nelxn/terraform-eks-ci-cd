@@ -1,0 +1,35 @@
+pipeline {
+agent any
+
+
+environment {
+    APP_NAME = "flask-app"
+    IMAGE_NAME = "flask-app-image"
+    REGISTRY = "dockerhub-username"   // replace with your DockerHub username
+}
+
+stages {
+    stage('Terraform Init & Apply (Cluster + DB)') {
+        steps {
+            dir('infra/minikube-setup') {
+                sh '''
+                    terraform init
+                    terraform apply -auto-approve
+                '''
+            }
+        }
+    }
+
+    stage('Build Docker Image') {
+        steps {
+            dir('apps') {
+                sh '''
+                    docker build -t $REGISTRY/$IMAGE_NAME:latest .
+                    docker push $REGISTRY/$IMAGE_NAME:latest
+                '''
+            }
+        }
+    }
+
+
+}
