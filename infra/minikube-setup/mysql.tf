@@ -1,15 +1,7 @@
-resource "kubernetes_namespace" "app_namespace" {
-  metadata {
-    name = "myapp"
-  }
-}
-
-
-
 resource "kubernetes_secret" "mysql_secret" {
   metadata {
     name      = "mysql-secret"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
+    namespace = kubernetes_namespace.app_ns.metadata[0].name
   }
 
   data = {
@@ -24,7 +16,7 @@ resource "kubernetes_secret" "mysql_secret" {
 resource "kubernetes_persistent_volume_claim" "mysql_pvc" {
     metadata {
         name      = "mysql-pvc"
-        namespace = kubernetes_namespace.app_namespace.metadata[0].name
+        namespace = kubernetes_namespace.app_ns.metadata[0].name
     }
     
     spec {
@@ -42,7 +34,7 @@ resource "kubernetes_persistent_volume_claim" "mysql_pvc" {
 resource "kubernetes_deployment" "mysql" {
     metadata {
         name      = "mysql"
-        namespace = kubernetes_namespace.app_namespace.metadata[0].name
+        namespace = kubernetes_namespace.app_ns.metadata[0].name
         labels = {
         app = "mysql"
         }
@@ -135,7 +127,7 @@ resource "kubernetes_deployment" "mysql" {
 resource "kubernetes_service" "mysql_service" {
     metadata {
         name      = "mysql-service"
-        namespace = kubernetes_namespace.app_namespace.metadata[0].name
+        namespace = kubernetes_namespace.app_ns.metadata[0].name
     }
     
     spec {

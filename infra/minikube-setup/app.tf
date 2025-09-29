@@ -1,6 +1,7 @@
 resource "kubernetes_deployment" "app_deployment" {
     metadata {
         name = "flask-app"
+        namespace = kubernetes_namespace.app_ns.metadata[0].name
         labels = {
         app = "app"
         }
@@ -29,7 +30,7 @@ resource "kubernetes_deployment" "app_deployment" {
 
             env {
                 name  = "DB_HOST"
-                value = kubernetes_service.mysql_service.metadata[0].name
+                value = "mysql-service"  # This should match the name of your MySQL service
             }
 
             env {
@@ -75,6 +76,7 @@ resource "kubernetes_deployment" "app_deployment" {
 resource "kubernetes_service" "app_service" {
     metadata {
         name = "flask-app-service"
+        namespace = kubernetes_namespace.app_ns.metadata[0].name
         labels = {
         app = "app"
         }

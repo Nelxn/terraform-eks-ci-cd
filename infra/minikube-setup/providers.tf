@@ -10,3 +10,10 @@ terraform {
 provider "kubernetes" {
   config_path = "~/.kube/config" # Minikube will write kubeconfig here
 }
+
+
+resource "kubernetes_namespace" "app_ns" {
+  metadata {
+    name = "flask-project"
+  }
+}

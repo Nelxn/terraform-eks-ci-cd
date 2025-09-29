@@ -18,7 +18,7 @@ resource "kubernetes_ingress" "flask_ingress" {
 
           backend {
             service {
-              name = kubernetes_service.flask.metadata[0].name
+              name = kubernetes_service.app_service.metadata[0].name
               port {
                 number = 80
               }
