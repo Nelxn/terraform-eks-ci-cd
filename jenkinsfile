@@ -5,7 +5,7 @@ agent any
 environment {
     APP_NAME = "flask-app"
     IMAGE_NAME = "flask-app-image"
-    REGISTRY = "dockerhub-username"   // replace with your DockerHub username
+    REGISTRY = "nelxn"   // replace with your DockerHub username
 }
 
 stages {
