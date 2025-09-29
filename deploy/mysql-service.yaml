@@ -4,9 +4,9 @@ metadata:
   name: mysql
   namespace: flask-project
 spec:
-  ports:
-    - port: 3306
+  type: ClusterIP
   selector:
     app: mysql
-  type: ClusterIP
-  
+  ports:
+    - port: 3306
+      targetPort: 3306
