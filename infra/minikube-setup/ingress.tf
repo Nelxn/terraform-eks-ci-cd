@@ -6,12 +6,16 @@ resource "kubernetes_ingress" "flask_ingress" {
       "nginx.ingress.kubernetes.io/rewrite-target" = "/"
     }
   }
+
   spec {
     rule {
-      host = 
+      host = "flask.local"
+
       http {
         path {
           path = "/"
+          path_type = "Prefix"
+
           backend {
             service {
               name = kubernetes_service.flask.metadata[0].name
