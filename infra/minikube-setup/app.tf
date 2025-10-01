@@ -26,7 +26,7 @@ resource "kubernetes_deployment" "app_deployment" {
         spec {
             container {
             name  = "app-container"
-            image = "your-dockerhub-username/your-app-image:latest"  # Replace with your Docker Hub username and image name
+            image = "nelxn/flask-app:latest"  # Replace with your Docker Hub username and image name
 
             env {
                 name  = "DB_HOST"
