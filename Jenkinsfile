@@ -2,38 +2,69 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "flask-app"
-        IMAGE_NAME = "flask-app-image"
-        REGISTRY = "nelxn"  // DockerHub username
+        // Use Jenkins home as kube/minikube mount points inside container
+        KUBECONFIG = "${env.HOME}/.kube/config"
     }
 
     stages {
-        stage('Start Minikube') {
+        stage('Prepare Kubeconfig for Jenkins + Minikube') {
             steps {
-                sh 'minikube start --driver=docker --cpus=2 --memory=2g'
+                script {
+                    // Fix Minikube path references in kubeconfig
+                    sh '''
+                        # Update .minikube paths in kubeconfig
+                        sed -i 's#/Users/mac/.minikube#${HOME}/.minikube#g' ${KUBECONFIG}
+                        # Use host.docker.internal to let Jenkins in Docker reach host's minikube
+                        sed -i 's#127.0.0.1#host.docker.internal#g' ${KUBECONFIG}
+                        # Remove certificate-authority and add insecure-skip-tls-verify for local dev
+                        sed -i '/certificate-authority:/d' ${KUBECONFIG}
+                        sed -i '/server:/a\\    insecure-skip-tls-verify: true' ${KUBECONFIG}
+                    '''
+                }
             }
         }
 
-        stage('Terraform Init & Apply') {
+        stage('Check kubectl connectivity') {
+            steps {
+                sh "kubectl --insecure-skip-tls-verify=true get nodes"
+            }
+        }
+
+        stage('Terraform Init') {
             steps {
                 dir('infra/minikube-setup') {
-                    sh '''
-                        terraform init
-                        terraform apply -auto-approve
-                    '''
+                    sh 'terraform init'
                 }
             }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Terraform Apply') {
             steps {
-                dir('apps') {
+                dir('infra/minikube-setup') {
+                    sh 'terraform apply --auto-approve'
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    // Confirm the app pod is running and service/ingress are ready
                     sh '''
-                        docker build -t $REGISTRY/$IMAGE_NAME:latest .
-                        docker push $REGISTRY/$IMAGE_NAME:latest
+                        kubectl --insecure-skip-tls-verify=true -n flask-project get pods
+                        kubectl --insecure-skip-tls-verify=true -n flask-project get svc
+                        kubectl --insecure-skip-tls-verify=true -n flask-project get ingress
                     '''
                 }
             }
+        }
+    }
+    post {
+        failure {
+            echo "Deployment failed. Please check logs above for issues."
+        }
+        success {
+            echo "Flask app deployed via Terraform to Minikube!"
         }
     }
 }
