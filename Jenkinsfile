@@ -6,15 +6,26 @@ pipeline {
     }
 
     stages {
-        stage('Prepare Kubeconfig for Jenkins + Minikube') {
+        stage('Fix Kubeconfig for Minikube in Docker') {
             steps {
                 script {
+                    // Clean bad ${HOME} from previous runs, then fix config
                     sh """
-                        # Fix minikube paths using double quotes for variable expansion
+                        # Remove literal \${HOME} if present from previous bad runs
+                        sed -i 's#\\\${HOME}#'$HOME'#g' \$KUBECONFIG
+
+                        # Replace Mac path with Jenkins home
                         sed -i "s#/Users/mac/.minikube#\$HOME/.minikube#g" \$KUBECONFIG
+
+                        # Replace 127.0.0.1 with host.docker.internal
                         sed -i "s#127.0.0.1#host.docker.internal#g" \$KUBECONFIG
+
+                        # Remove CA and set skip TLS (for local dev)
                         sed -i '/certificate-authority:/d' \$KUBECONFIG
                         sed -i '/server:/a\\    insecure-skip-tls-verify: true' \$KUBECONFIG
+
+                        # Show for debug
+                        grep ".minikube" \$KUBECONFIG
                     """
                 }
             }
