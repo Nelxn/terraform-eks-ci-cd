@@ -44,6 +44,13 @@ pipeline {
             }
         }
 
+        stage('Kubernetes Cleanup') {
+            steps {
+                // Delete the deployment if it exists to avoid "already exists" error
+                sh 'kubectl delete deployment flask-app -n flask-project --ignore-not-found'
+            }
+        }
+
         stage('Terraform State Fix') {
             steps {
                 dir('infra/minikube-setup') {
