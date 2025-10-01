@@ -2,24 +2,20 @@ pipeline {
     agent any
 
     environment {
-        // Use Jenkins home as kube/minikube mount points inside container
-        KUBECONFIG = "${env.HOME}/.kube/config"
+        KUBECONFIG = "${HOME}/.kube/config"
     }
 
     stages {
         stage('Prepare Kubeconfig for Jenkins + Minikube') {
             steps {
                 script {
-                    // Fix Minikube path references in kubeconfig
-                    sh '''
-                        # Update .minikube paths in kubeconfig
-                        sed -i 's#/Users/mac/.minikube#${HOME}/.minikube#g' ${KUBECONFIG}
-                        # Use host.docker.internal to let Jenkins in Docker reach host's minikube
-                        sed -i 's#127.0.0.1#host.docker.internal#g' ${KUBECONFIG}
-                        # Remove certificate-authority and add insecure-skip-tls-verify for local dev
-                        sed -i '/certificate-authority:/d' ${KUBECONFIG}
-                        sed -i '/server:/a\\    insecure-skip-tls-verify: true' ${KUBECONFIG}
-                    '''
+                    sh """
+                        # Fix minikube paths using double quotes for variable expansion
+                        sed -i "s#/Users/mac/.minikube#\$HOME/.minikube#g" \$KUBECONFIG
+                        sed -i "s#127.0.0.1#host.docker.internal#g" \$KUBECONFIG
+                        sed -i '/certificate-authority:/d' \$KUBECONFIG
+                        sed -i '/server:/a\\    insecure-skip-tls-verify: true' \$KUBECONFIG
+                    """
                 }
             }
         }
@@ -49,12 +45,11 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 script {
-                    // Confirm the app pod is running and service/ingress are ready
-                    sh '''
+                    sh """
                         kubectl --insecure-skip-tls-verify=true -n flask-project get pods
                         kubectl --insecure-skip-tls-verify=true -n flask-project get svc
                         kubectl --insecure-skip-tls-verify=true -n flask-project get ingress
-                    '''
+                    """
                 }
             }
         }
