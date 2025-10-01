@@ -1,4 +1,4 @@
-resource "kubernetes_ingress" "flask_ingress" {
+resource "kubernetes_ingress_v1" "flask_ingress" {
   metadata {
     name      = "flask-ingress"
     namespace = kubernetes_namespace.app_ns.metadata[0].name
@@ -10,12 +10,10 @@ resource "kubernetes_ingress" "flask_ingress" {
   spec {
     rule {
       host = "flask.local"
-
       http {
         path {
-          path = "/"
+          path      = "/"
           path_type = "Prefix"
-
           backend {
             service {
               name = "flask-app-service"
