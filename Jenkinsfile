@@ -9,7 +9,6 @@ pipeline {
         stage('Fix Kubeconfig for Minikube in Docker') {
             steps {
                 script {
-                    // Clean bad ${HOME} from previous runs, then fix config
                     sh """
                         # Remove literal \${HOME} if present from previous bad runs
                         sed -i 's#\\\${HOME}#'$HOME'#g' \$KUBECONFIG
@@ -41,6 +40,15 @@ pipeline {
             steps {
                 dir('infra/minikube-setup') {
                     sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform State Fix') {
+            steps {
+                dir('infra/minikube-setup') {
+                    // Remove the tainted resource to avoid identity errors
+                    sh 'terraform state rm kubernetes_deployment.app_deployment || true'
                 }
             }
         }
