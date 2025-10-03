@@ -6,33 +6,9 @@ pipeline {
     }
 
     stages {
-        stage('Fix Kubeconfig for Minikube in Docker') {
-            steps {
-                script {
-                    sh """
-                        # Remove literal \${HOME} if present from previous bad runs
-                        sed -i 's#\\\${HOME}#'$HOME'#g' \$KUBECONFIG
-
-                        # Replace Mac path with Jenkins home
-                        sed -i "s#/Users/mac/.minikube#\$HOME/.minikube#g" \$KUBECONFIG
-
-                        # Replace 127.0.0.1 with host.docker.internal
-                        sed -i "s#127.0.0.1#host.docker.internal#g" \$KUBECONFIG
-
-                        # Remove CA and set skip TLS (for local dev)
-                        sed -i '/certificate-authority:/d' \$KUBECONFIG
-                        sed -i '/server:/a\\    insecure-skip-tls-verify: true' \$KUBECONFIG
-
-                        # Show for debug
-                        grep ".minikube" \$KUBECONFIG
-                    """
-                }
-            }
-        }
-
         stage('Check kubectl connectivity') {
             steps {
-                sh "kubectl --insecure-skip-tls-verify=true get nodes"
+                sh "kubectl --kubeconfig=$KUBECONFIG get nodes"
             }
         }
 
@@ -44,18 +20,21 @@ pipeline {
             }
         }
 
-        stage('Kubernetes Cleanup') {
+        stage('Pre-cleanup') {
             steps {
-                // Delete the deployment if it exists to avoid "already exists" error
-                sh 'kubectl delete deployment flask-app -n flask-project --ignore-not-found'
-            }
-        }
-
-        stage('Terraform State Fix') {
-            steps {
-                dir('infra/minikube-setup') {
-                    // Remove the tainted resource to avoid identity errors
-                    sh 'terraform state rm kubernetes_deployment.app_deployment || true'
+                script {
+                    sh """
+                        echo "🧹 Cleaning up old Kubernetes resources..."
+                        # Delete namespace (if stuck, force cleanup later)
+                        kubectl --kubeconfig=$KUBECONFIG delete ns flask-project --ignore-not-found || true
+                        
+                        echo "🧹 Resetting Terraform state..."
+                        cd infra/minikube-setup
+                        terraform state rm kubernetes_namespace.app_ns || true
+                        terraform state rm kubernetes_deployment.app_deployment || true
+                        terraform state rm kubernetes_service.app_service || true
+                        terraform state rm kubernetes_ingress.app_ingress || true
+                    """
                 }
             }
         }
@@ -72,20 +51,26 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl --insecure-skip-tls-verify=true -n flask-project get pods
-                        kubectl --insecure-skip-tls-verify=true -n flask-project get svc
-                        kubectl --insecure-skip-tls-verify=true -n flask-project get ingress
+                        echo "✅ Pods:"
+                        kubectl --kubeconfig=$KUBECONFIG -n flask-project get pods
+                        
+                        echo "✅ Services:"
+                        kubectl --kubeconfig=$KUBECONFIG -n flask-project get svc
+                        
+                        echo "✅ Ingress:"
+                        kubectl --kubeconfig=$KUBECONFIG -n flask-project get ingress
                     """
                 }
             }
         }
     }
+
     post {
         failure {
-            echo "Deployment failed. Please check logs above for issues."
+            echo "❌ Deployment failed. Pipeline cleaned up state. Check logs for details."
         }
         success {
-            echo "Flask app deployed via Terraform to Minikube!"
+            echo "🚀 Flask app deployed via Terraform to Minikube (on host)!"
         }
     }
 }
