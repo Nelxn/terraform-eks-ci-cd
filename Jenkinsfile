@@ -15,7 +15,7 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 dir('infra/minikube-setup') {
-                    sh 'terraform init'
+                    sh 'terraform init -upgrade'
                 }
             }
         }
