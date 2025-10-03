@@ -8,8 +8,9 @@ terraform {
 }
 
 provider "kubernetes" {
-  config_path = "~/.kube/config" # Minikube will write kubeconfig here
+  config_path = "/var/jenkins_home/.kube/config"
 }
+
 
 
 resource "kubernetes_namespace" "app_ns" {
