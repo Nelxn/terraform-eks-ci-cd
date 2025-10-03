@@ -20,22 +20,9 @@ pipeline {
             }
         }
 
-        stage('Pre-cleanup') {
+        stage('Kubernetes Cleanup') {
             steps {
-                script {
-                    sh """
-                        echo "🧹 Cleaning up old Kubernetes resources..."
-                        # Delete namespace (if stuck, force cleanup later)
-                        kubectl --kubeconfig=$KUBECONFIG delete ns flask-project --ignore-not-found || true
-                        
-                        echo "🧹 Resetting Terraform state..."
-                        cd infra/minikube-setup
-                        terraform state rm kubernetes_namespace.app_ns || true
-                        terraform state rm kubernetes_deployment.app_deployment || true
-                        terraform state rm kubernetes_service.app_service || true
-                        terraform state rm kubernetes_ingress.app_ingress || true
-                    """
-                }
+                sh 'kubectl --kubeconfig=$KUBECONFIG delete deployment flask-app -n flask-project --ignore-not-found'
             }
         }
 
@@ -51,13 +38,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                        echo "✅ Pods:"
                         kubectl --kubeconfig=$KUBECONFIG -n flask-project get pods
-                        
-                        echo "✅ Services:"
                         kubectl --kubeconfig=$KUBECONFIG -n flask-project get svc
-                        
-                        echo "✅ Ingress:"
                         kubectl --kubeconfig=$KUBECONFIG -n flask-project get ingress
                     """
                 }
@@ -67,10 +49,10 @@ pipeline {
 
     post {
         failure {
-            echo "❌ Deployment failed. Pipeline cleaned up state. Check logs for details."
+            echo "Deployment failed. Please check logs above for issues."
         }
         success {
-            echo "🚀 Flask app deployed via Terraform to Minikube (on host)!"
+            echo "Flask app deployed via Terraform to Minikube (on host)!"
         }
     }
 }
