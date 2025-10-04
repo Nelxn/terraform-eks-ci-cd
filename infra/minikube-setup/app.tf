@@ -48,7 +48,7 @@ resource "kubernetes_deployment" "app_deployment" {
                 value_from {
                 secret_key_ref {
                     name = kubernetes_secret.mysql_secret.metadata[0].name
-                    key  = "MYSQL_ROOT_PASSWORD"
+                    key  = "MYSQL_PASSWORD"
                 }
                 }
             }
