@@ -1,3 +1,34 @@
+resource "kubernetes_secret" "mysql_secret" {
+  metadata {
+    name      = "mysql-secret"
+    namespace = kubernetes_namespace.app_ns.metadata[0].name
+  }
+
+  data = {
+    MYSQL_ROOT_PASSWORD = "rootpass"
+    MYSQL_DATABASE      = "myappdb"
+    MYSQL_USER          = "myuser"
+    MYSQL_PASSWORD      = "mypassword"
+  }
+}
+
+resource "kubernetes_persistent_volume_claim" "mysql_pvc" {
+  metadata {
+    name      = "mysql-pvc"
+    namespace = kubernetes_namespace.app_ns.metadata[0].name
+  }
+
+  spec {
+    access_modes = ["ReadWriteOnce"]
+
+    resources {
+      requests = {
+        storage = "1Gi"
+      }
+    }
+  }
+}
+
 resource "kubernetes_deployment" "mysql" {
   metadata {
     name      = "mysql"
@@ -28,13 +59,6 @@ resource "kubernetes_deployment" "mysql" {
           name  = "mysql"
           image = "mysql:5.7"
 
-          # ✅ Allow connections from all IPs
-          args = [
-            "--bind-address=0.0.0.0",
-            "--default-authentication-plugin=mysql_native_password"
-          ]
-
-          # ✅ Environment variables from secret
           env {
             name = "MYSQL_ROOT_PASSWORD"
             value_from {
@@ -75,6 +99,12 @@ resource "kubernetes_deployment" "mysql" {
             }
           }
 
+          # Allow root login from any host
+          env {
+            name  = "MYSQL_ROOT_HOST"
+            value = "%"
+          }
+
           port {
             container_port = 3306
           }
@@ -82,19 +112,6 @@ resource "kubernetes_deployment" "mysql" {
           volume_mount {
             name       = "mysql-storage"
             mount_path = "/var/lib/mysql"
-          }
-
-          # ✅ Init script to allow access from any host
-          lifecycle {
-            post_start {
-              exec {
-                command = [
-                  "bash",
-                  "-c",
-                  "sleep 10 && mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e \"GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}' WITH GRANT OPTION; FLUSH PRIVILEGES;\""
-                ]
-              }
-            }
           }
         }
 
@@ -107,5 +124,25 @@ resource "kubernetes_deployment" "mysql" {
         }
       }
     }
+  }
+}
+
+resource "kubernetes_service" "mysql_service" {
+  metadata {
+    name      = "mysql-service"
+    namespace = kubernetes_namespace.app_ns.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = kubernetes_deployment.mysql.metadata[0].labels["app"]
+    }
+
+    port {
+      port        = 3306
+      target_port = 3306
+    }
+
+    type = "ClusterIP"
   }
 }
