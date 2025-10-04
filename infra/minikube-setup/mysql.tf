@@ -1,14 +1,14 @@
-resource "kubernetes_secret_v1" "mysql_secret" {
+resource "kubernetes_secret" "mysql_secret" {
   metadata {
     name      = "mysql-secret"
     namespace = kubernetes_namespace.app_ns.metadata[0].name
   }
 
-  string_data = {
-    MYSQL_ROOT_PASSWORD = "rootpass"
-    MYSQL_DATABASE      = "myappdb"
-    MYSQL_USER          = "myuser"
-    MYSQL_PASSWORD      = "mypassword"
+  data = {
+    MYSQL_ROOT_PASSWORD = base64encode("rootpass")
+    MYSQL_DATABASE      = base64encode("myappdb")
+    MYSQL_USER          = base64encode("myuser")
+    MYSQL_PASSWORD      = base64encode("mypassword")
   }
 }
 
@@ -65,7 +65,7 @@ resource "kubernetes_deployment" "mysql" {
                 name = "MYSQL_ROOT_PASSWORD"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_ROOT_PASSWORD"
                 }
                 }
@@ -75,7 +75,7 @@ resource "kubernetes_deployment" "mysql" {
                 name = "MYSQL_DATABASE"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_DATABASE"
                 }
                 }
@@ -85,7 +85,7 @@ resource "kubernetes_deployment" "mysql" {
                 name = "MYSQL_USER"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_USER"
                 }
                 }
@@ -95,7 +95,7 @@ resource "kubernetes_deployment" "mysql" {
                 name = "MYSQL_PASSWORD"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_PASSWORD"
                 }
                 }

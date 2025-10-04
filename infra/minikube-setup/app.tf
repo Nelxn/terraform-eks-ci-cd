@@ -37,7 +37,7 @@ resource "kubernetes_deployment" "app_deployment" {
                 name = "DB_USER"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_USER"
                 }
                 }
@@ -47,7 +47,7 @@ resource "kubernetes_deployment" "app_deployment" {
                 name = "DB_PASSWORD"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_PASSWORD"
                 }
                 }
@@ -57,7 +57,7 @@ resource "kubernetes_deployment" "app_deployment" {
                 name = "DB_NAME"
                 value_from {
                 secret_key_ref {
-                    name = kubernetes_secret_v1.mysql_secret.metadata[0].name
+                    name = kubernetes_secret.mysql_secret.metadata[0].name
                     key  = "MYSQL_DATABASE"
                 }
                 }
